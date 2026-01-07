@@ -38,6 +38,7 @@ app.get('/allcards', async (req, res) => {
     }
 });
 
+
 //Example Route: Create a new card
 app.post('/addcard', async (req, res) => {
     const {card_name, card_pic} = req.body;
