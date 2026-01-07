@@ -26,7 +26,6 @@ app.listen(port, () => {
     console.log('Server running on port', port);
 });
 
-
 //Example Route: Get all cards
 app.get('/allcards', async (req, res) => {
     try {
