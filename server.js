@@ -1,11 +1,11 @@
 const express = require("express");
 const mysql = require("mysql2/promise");
-const cors = require("cors");
 require("dotenv").config();
 
 const app = express();
 const port = process.env.PORT || 3000;
 
+// Database config
 const dbConfig = {
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
@@ -17,13 +17,38 @@ const dbConfig = {
     queueLimit: 0,
 };
 
-app.use(cors());
-app.use(express.json());
+// Middleware
+const cors = require("cors");
 
+const allowedOrigins = [
+    "http://localhost:3000",
+    // "https://YOUR-frontend.vercel.app",   // add later
+    // "https://YOUR-frontend.onrender.com"  // add later
+];
+
+app.use(
+    cors({
+        origin: function (origin, callback) {
+            // allow requests with no origin (Postman/server-to-server)
+            if (!origin) return callback(null, true);
+
+            if (allowedOrigins.includes(origin)) {
+                return callback(null, true);
+            }
+            return callback(new Error("Not allowed by CORS"));
+        },
+        methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allowedHeaders: ["Content-Type", "Authorization"],
+        credentials: false,
+    })
+);
+
+// Start server
 app.listen(port, () => {
     console.log("Server running on port", port);
 });
 
+// Get all cards
 app.get("/allcards", async (req, res) => {
     let connection;
     try {
@@ -60,7 +85,7 @@ app.post("/addcard", async (req, res) => {
 
 // Update a card
 app.put("/editcard/:id", async (req, res) => {
-    const { id } = req.params;
+    const { cardId } = req.params;
     const { card_name, card_pic } = req.body;
     let connection;
 
@@ -68,7 +93,7 @@ app.put("/editcard/:id", async (req, res) => {
         connection = await mysql.createConnection(dbConfig);
         await connection.execute(
             "UPDATE cards SET card_name = ?, card_pic = ? WHERE id = ?",
-            [card_name, card_pic, id]
+            [card_name, card_pic, cardId]
         );
         res.json({ message: "Card updated successfully" });
     } catch (err) {
@@ -81,14 +106,14 @@ app.put("/editcard/:id", async (req, res) => {
 
 // Delete a card
 app.delete("/deletecard/:id", async (req, res) => {
-    const { id } = req.params;
+    const {cardId } = req.params;
     let connection;
 
     try {
         connection = await mysql.createConnection(dbConfig);
         await connection.execute(
             "DELETE FROM cards WHERE id = ?",
-            [id]
+            [cardId]
         );
         res.json({ message: "Card deleted successfully" });
     } catch (err) {
