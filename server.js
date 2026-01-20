@@ -23,7 +23,7 @@ app.use(express.json());
 
 // Secure CORS
 const allowedOrigins = [
-    "https://onlinecardl1920.vercel.app/"
+    "https://onlinecardl1920.vercel.app"
 ];
 
 app.use(
