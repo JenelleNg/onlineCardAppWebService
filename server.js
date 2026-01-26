@@ -4,6 +4,8 @@ const cors = require("cors");
 require("dotenv").config();
 
 const app = express();
+app.use(express.json());
+
 const port = process.env.PORT || 3000;
 
 // Database config
@@ -18,13 +20,13 @@ const dbConfig = {
     queueLimit: 0,
 };
 
-// Parse JSON
-app.use(express.json());
+const pool = mysql.createPool(dbConfig);
 
 // Secure CORS
 const allowedOrigins = [
-    "https://localhost:3000",
-    // "https://onlinecardl1920.vercel.app"
+    "http://localhost:3000",
+    "https://card-app-smoky.vercel.app",
+    // "https://YOUR-frontend.onrender.com"
 ];
 
 app.use(
@@ -33,15 +35,70 @@ app.use(
             // allow requests with no origin (Postman/server-to-server)
             if (!origin) return callback(null, true);
 
-            if (allowedOrigins.includes(origin)) return callback(null, true);
-
+            if (allowedOrigins.includes(origin)) {
+                return callback(null, true);
+            }
             return callback(new Error("Not allowed by CORS"));
         },
         methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         allowedHeaders: ["Content-Type", "Authorization"],
         credentials: false,
-    })
+    }),
 );
+
+const DEMO_USER = {
+    id: 1,
+    username: "admin",
+    password: "admin123",
+};
+
+// login
+const jwt = require("jsonwebtoken");
+const JWT_SECRET = process.env.JWT_SECRET;
+
+// login
+app.post("/login", async (req, res) => {
+    const { username, password } = req.body;
+
+    if (username !== DEMO_USER.username && password !== DEMO_USER.password) {
+        return res.status(401).json({ error: "Invalid credentials" });
+    }
+
+    const token = jwt.sign(
+        { userId: DEMO_USER.id, username: DEMO_USER.username },
+        JWT_SECRET,
+        { expiresIn: "1h" },
+    );
+
+    res.json({ token });
+});
+
+function requireAuth(req, res, next) {
+    const header = req.headers.authorization; // "Bearer <token>"
+
+    if (!header) {
+        return res.status(401).json({ error: "Authorization header missing" });
+    }
+
+    const [type, token] = header.split(" ");
+
+    if (type !== "Bearer" || !token) {
+        return res.status(401).json({ error: "Invalid authorization header" });
+    }
+
+    try {
+        const payload = jwt.verify(token, JWT_SECRET);
+        req.user = payload;
+        next();
+    } catch (error) {
+        return res.status(401).json({ error: "Invalid or expired token" });
+    }
+}
+
+// Protect only ONE route for this demo
+app.post("/addcard", requireAuth, async (req, res) => {
+// existing addcard logic (same as before)
+});
 
 // Get all cards
 app.get("/allcards", async (req, res) => {
@@ -77,47 +134,6 @@ app.post("/addcard", async (req, res) => {
         if (connection) connection.end();
     }
 });
-
-// // Update a card
-// app.put("/editcard/:id", async (req, res) => {
-//     const { id } = req.params;       // ✅ use `id`, not `cardId`
-//     const { card_name, card_pic } = req.body;
-//     let connection;
-//
-//     try {
-//         connection = await mysql.createConnection(dbConfig);
-//         await connection.execute(
-//             "UPDATE cards SET card_name = ?, card_pic = ? WHERE id = ?",
-//             [card_name, card_pic, id]   // ✅ match param name
-//         );
-//         res.json({ message: "Card updated successfully" });
-//     } catch (err) {
-//         console.error(err);
-//         res.status(500).json({ message: "Server error - could not update card" });
-//     } finally {
-//         if (connection) connection.end();
-//     }
-// });
-//
-// // Delete a card
-// app.delete("/deletecard/:id", async (req, res) => {
-//     const { id } = req.params;       // ✅ use `id`, not `cardId`
-//     let connection;
-//
-//     try {
-//         connection = await mysql.createConnection(dbConfig);
-//         await connection.execute(
-//             "DELETE FROM cards WHERE id = ?",
-//             [id]
-//         );
-//         res.json({ message: "Card deleted successfully" });
-//     } catch (err) {
-//         console.error(err);
-//         res.status(500).json({ message: "Server error - could not delete card" });
-//     } finally {
-//         if (connection) connection.end();
-//     }
-// });
 
 app.put('/updatecard/:id', async (req, res) => {
     const { id } = req.params;
