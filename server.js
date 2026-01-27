@@ -25,7 +25,7 @@ const pool = mysql.createPool(dbConfig);
 // Secure CORS
 const allowedOrigins = [
     "http://localhost:3000",
-    "https://card-app-smoky.vercel.app",
+    "https://onlinecardl1920.vercel.app",
     // "https://YOUR-frontend.onrender.com"
 ];
 
