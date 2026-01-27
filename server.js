@@ -95,11 +95,6 @@ function requireAuth(req, res, next) {
     }
 }
 
-// Protect only ONE route for this demo
-app.post("/addcard", requireAuth, async (req, res) => {
-// existing addcard logic (same as before)
-});
-
 // Get all cards
 app.get("/allcards", async (req, res) => {
     let connection;
@@ -116,7 +111,7 @@ app.get("/allcards", async (req, res) => {
 });
 
 // Add a new card
-app.post("/addcard", async (req, res) => {
+app.post("/addcard", requireAuth, async (req, res) => {
     const { card_name, card_pic } = req.body;
     let connection;
 
@@ -126,7 +121,7 @@ app.post("/addcard", async (req, res) => {
             "INSERT INTO cards (card_name, card_pic) VALUES (?, ?)",
             [card_name, card_pic]
         );
-        res.json({ message: "Card added successfully" });
+        res.status(201).json({ message: "Card added successfully" });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: "Server error - could not add card" });
